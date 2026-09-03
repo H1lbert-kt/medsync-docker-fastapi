@@ -3,6 +3,10 @@ from datetime import date, datetime, time
 from typing import Optional
 from app.models.clinic import AppointmentStatus, RoleEnum
 
+class token(BaseModel):
+    access_token: str
+    token_type: str
+
 class UserBase(BaseModel):
     email: EmailStr
     role: RoleEnum
