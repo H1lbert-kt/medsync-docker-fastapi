@@ -1,9 +1,9 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict, field_validator
 from datetime import date, datetime, time
 from typing import Optional
 from app.models.clinic import AppointmentStatus, RoleEnum
 
-class token(BaseModel):
+class Token(BaseModel):
     access_token: str
     token_type: str
 
@@ -47,6 +47,13 @@ class AppointmentCreate(BaseModel):
     patient_id: int
     date_consultation: date
     consultation_time: time
+
+    @field_validator("date_consultation")
+    @classmethod
+    def date_not_in_past(cls, v):
+        if v < date.today():
+            raise ValueError("Cannot schedule appointments in the past.")
+        return v
 
 class AppointmentResponse(AppointmentCreate):
 

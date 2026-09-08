@@ -1,15 +1,17 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Path, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.clinic import RoleEnum, UserModel
+from app.models.clinic import (
+    RoleEnum, UserModel, DoctorModel, PatientModel, AppointmentModel, AppointmentStatus
+)
 from app.schemas.clinic import (
     DoctorCreate, DoctorResponse,
     PatientCreate, PatientResponse,
     AppointmentCreate, AppointmentResponse
 )
 from app.services import clinic_services
-from app.core.dependencies import require_roles
+from app.core.dependencies import require_roles, get_current_user
 
 router = APIRouter(prefix="/clinic", tags=["Clinic"])
 
@@ -35,5 +37,58 @@ def appointment_register(
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(require_roles([RoleEnum.ADMIN, RoleEnum.RECEPTIONIST, RoleEnum.PATIENT]))
 ):
+    if current_user.role == RoleEnum.PATIENT:
+        patient = db.query(PatientModel).filter(PatientModel.user_id == current_user.id).first()
+        if not patient:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient profile not found.")
+        appointment_data.patient_id = patient.id
+
     return clinic_services.create_appointment(db=db, appointment_data=appointment_data)
+
+@router.get("/doctors", response_model=list[DoctorResponse])
+def list_doctors(db: Session = Depends(get_db)):
+    return db.query(DoctorModel).all()
+
+@router.get("/patients", response_model=list[PatientResponse])
+def list_patients(
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(require_roles([RoleEnum.ADMIN, RoleEnum.RECEPTIONIST]))
+):
+    return db.query(PatientModel).all()
+
+@router.get("/appointments", response_model=list[AppointmentResponse])
+def list_appointments(
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    if current_user.role == RoleEnum.PATIENT:
+        patient = db.query(PatientModel).filter(PatientModel.user_id == current_user.id).first()
+        return db.query(AppointmentModel).filter(AppointmentModel.patient_id == patient.id).all()
+    if current_user.role == RoleEnum.DOCTOR:
+        doctor = db.query(DoctorModel).filter(DoctorModel.user_id == current_user.id).first()
+        return db.query(AppointmentModel).filter(AppointmentModel.doctor_id == doctor.id).all()
+    return db.query(AppointmentModel).all()
+
+@router.patch("/appointments/{appointment_id}/cancel", response_model=AppointmentResponse)
+def cancel_appointment(
+    appointment_id: int = Path(...),
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    from fastapi import HTTPException
+
+    appointment = db.query(AppointmentModel).filter(AppointmentModel.id == appointment_id).first()
+    if not appointment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Appointment not found.")
+
+    if current_user.role == RoleEnum.PATIENT:
+        patient = db.query(PatientModel).filter(PatientModel.user_id == current_user.id).first()
+        if appointment.patient_id != patient.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only cancel your own appointments.")
+
+    appointment.status = AppointmentStatus.CANCELLED
+    db.commit()
+    db.refresh(appointment)
+    return appointment
 
