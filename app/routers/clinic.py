@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Path, status
+from fastapi import APIRouter, Depends, Path, status, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -40,7 +40,6 @@ def appointment_register(
     if current_user.role == RoleEnum.PATIENT:
         patient = db.query(PatientModel).filter(PatientModel.user_id == current_user.id).first()
         if not patient:
-            from fastapi import HTTPException
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient profile not found.")
         appointment_data.patient_id = patient.id
 
@@ -64,9 +63,13 @@ def list_appointments(
 ):
     if current_user.role == RoleEnum.PATIENT:
         patient = db.query(PatientModel).filter(PatientModel.user_id == current_user.id).first()
+        if not patient:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient profile not found.")
         return db.query(AppointmentModel).filter(AppointmentModel.patient_id == patient.id).all()
     if current_user.role == RoleEnum.DOCTOR:
         doctor = db.query(DoctorModel).filter(DoctorModel.user_id == current_user.id).first()
+        if not doctor:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor profile not found.")
         return db.query(AppointmentModel).filter(AppointmentModel.doctor_id == doctor.id).all()
     return db.query(AppointmentModel).all()
 
@@ -76,7 +79,6 @@ def cancel_appointment(
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user)
 ):
-    from fastapi import HTTPException
 
     appointment = db.query(AppointmentModel).filter(AppointmentModel.id == appointment_id).first()
     if not appointment:
