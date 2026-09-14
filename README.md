@@ -33,6 +33,10 @@ O MedSync API é um sistema de agendamento de consultas médicas construído com
 - Cancelamento de consultas com controle de permissão
 - Consultas filtradas automaticamente por perfil (paciente vê só suas, médico vê só suas)
 
+### Swagger UI
+
+![Swagger UI - MedSync API](docs/swagger.png)
+
 ---
 
 ## Funcionalidades
