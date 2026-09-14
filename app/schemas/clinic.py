@@ -55,6 +55,17 @@ class AppointmentCreate(BaseModel):
             raise ValueError("Cannot schedule appointments in the past.")
         return v
 
+    @field_validator("consultation_time")
+    @classmethod
+    def time_not_in_past(cls, v, info):
+        from datetime import datetime, timezone
+        date_val = info.data.get("date_consultation")
+        if date_val and date_val == date.today():
+            now = datetime.now(timezone.utc).time()
+            if v < now:
+                raise ValueError("Cannot schedule appointments for a time that has already passed.")
+        return v
+
 class AppointmentResponse(AppointmentCreate):
 
     id: int
