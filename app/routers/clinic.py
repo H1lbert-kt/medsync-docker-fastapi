@@ -46,7 +46,9 @@ def appointment_register(
     return clinic_services.create_appointment(db=db, appointment_data=appointment_data)
 
 @router.get("/doctors", response_model=list[DoctorResponse])
-def list_doctors(db: Session = Depends(get_db)):
+def list_doctors(db: Session = Depends(get_db),
+                 current_user: UserModel = Depends(require_roles([RoleEnum.ADMIN, RoleEnum.RECEPTIONIST]))
+):
     return db.query(DoctorModel).all()
 
 @router.get("/patients", response_model=list[PatientResponse])
