@@ -88,7 +88,7 @@ def cancel_appointment(
 
     if current_user.role == RoleEnum.PATIENT:
         patient = db.query(PatientModel).filter(PatientModel.user_id == current_user.id).first()
-        if appointment.patient_id != patient.id:
+        if not patient or appointment.patient_id != patient.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only cancel your own appointments.")
 
     appointment.status = AppointmentStatus.CANCELLED
