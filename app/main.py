@@ -1,5 +1,6 @@
 from fastapi import FastAPI
-from app.routers import clinic, auth
+
+from app.routers import auth, clinic
 
 app = FastAPI(
     title="MedSync API",

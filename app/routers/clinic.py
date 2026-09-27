@@ -1,23 +1,31 @@
-from fastapi import APIRouter, Depends, Path, status, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 from sqlalchemy.orm import Session
 
+from app.core.dependencies import get_current_user, require_roles
 from app.database import get_db
 from app.models.clinic import (
-    RoleEnum, UserModel, DoctorModel, PatientModel, AppointmentModel, AppointmentStatus
+    AppointmentModel,
+    AppointmentStatus,
+    DoctorModel,
+    PatientModel,
+    RoleEnum,
+    UserModel,
 )
 from app.schemas.clinic import (
-    DoctorCreate, DoctorResponse,
-    PatientCreate, PatientResponse,
-    AppointmentCreate, AppointmentResponse
+    AppointmentCreate,
+    AppointmentResponse,
+    DoctorCreate,
+    DoctorResponse,
+    PatientCreate,
+    PatientResponse,
 )
 from app.services import clinic_services
-from app.core.dependencies import require_roles, get_current_user
 
 router = APIRouter(prefix="/clinic", tags=["Clinic"])
 
 @router.post("/doctors", response_model=DoctorResponse, status_code=status.HTTP_201_CREATED)
 def doctor_register(
-    doctor_data: DoctorCreate, 
+    doctor_data: DoctorCreate,
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(require_roles([RoleEnum.ADMIN]))
 ):

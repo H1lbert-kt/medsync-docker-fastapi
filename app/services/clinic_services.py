@@ -1,11 +1,19 @@
 from typing import Optional
+
+from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from fastapi import status, HTTPException
 
-from app.models.clinic import UserModel, DoctorModel, AppointmentModel, AppointmentStatus, PatientModel
-from app.schemas.clinic import DoctorCreate, PatientCreate, AppointmentCreate
-from app.core.security import verify_password, get_password_hash
+from app.core.security import get_password_hash, verify_password
+from app.models.clinic import (
+    AppointmentModel,
+    AppointmentStatus,
+    DoctorModel,
+    PatientModel,
+    UserModel,
+)
+from app.schemas.clinic import AppointmentCreate, DoctorCreate, PatientCreate
+
 
 def authenticate_user(db: Session, email: str, password: str) -> Optional[UserModel]:
     user = db.query(UserModel).filter(UserModel.email == email).first()
@@ -36,13 +44,13 @@ def doctor_create(db: Session, doctor_data: DoctorCreate) -> DoctorModel:
         db.commit()
         db.refresh(new_doctor)
         return new_doctor
-    
+
     except IntegrityError:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email or crm already registered in the system."
-        )
+        ) from None
 
 def patient_create(db: Session, patient_data: PatientCreate) -> PatientModel:
     hashed_password = get_password_hash(patient_data.user.password)
@@ -65,13 +73,13 @@ def patient_create(db: Session, patient_data: PatientCreate) -> PatientModel:
         db.commit()
         db.refresh(new_patient)
         return new_patient
-    
+
     except IntegrityError:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered in the system."
-        )
+        ) from None
 
 def create_appointment(db: Session, appointment_data: AppointmentCreate):
     doctor_exists = db.query(DoctorModel.id).filter(DoctorModel.id == appointment_data.doctor_id).first()
@@ -101,10 +109,10 @@ def create_appointment(db: Session, appointment_data: AppointmentCreate):
         db.commit()
         db.refresh(new_appointment)
         return new_appointment
-    
+
     except IntegrityError:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="The doctor already has an appointment scheduled for this date and time."
-        )
+        ) from None

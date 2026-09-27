@@ -1,5 +1,3 @@
-import pytest
-
 def test_create_doctor_as_admin_success(client, admin_token):
     headers = {"Authorization": f"Bearer {admin_token}"}
     payload = {

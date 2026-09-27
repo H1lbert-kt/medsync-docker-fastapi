@@ -1,8 +1,21 @@
-from datetime import datetime, timezone
 import enum
-from sqlalchemy import Integer, String, ForeignKey, Column, DateTime, Date, Time, Enum, UniqueConstraint
+from datetime import datetime, timezone
+
+from sqlalchemy import (
+    Column,
+    Date,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Time,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship
+
 from app.database import Base
+
 
 class RoleEnum(str, enum.Enum):
     ADMIN = "ADMIN"

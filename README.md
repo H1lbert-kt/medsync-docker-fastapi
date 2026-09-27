@@ -1,5 +1,7 @@
 # MedSync API
 
+[![CI](https://github.com/H1lbert-kt/medsync-docker-fastapi/actions/workflows/ci.yml/badge.svg)](https://github.com/H1lbert-kt/medsync-docker-fastapi/actions/workflows/ci.yml)
+
 API REST para gerenciamento de clínicas médicas, permitindo cadastro de médicos, pacientes e agendamento de consultas, com autenticação JWT e controle de acesso por perfil.
 
 ---
@@ -18,6 +20,7 @@ API REST para gerenciamento de clínicas médicas, permitindo cadastro de médic
 - [Endpoints da API](#endpoints-da-api)
 - [Autenticação e Controle de Acesso](#autenticação-e-controle-de-acesso)
 - [Testes](#testes)
+- [Integração Contínua](#integração-contínua)
 - [Deploy](#deploy)
 
 ---
@@ -151,9 +154,14 @@ medsync/
 │   ├── conftest.py              # Fixtures (cliente de teste, db em memória, tokens)
 │   ├── test_auth.py             # Testes de autenticação
 │   └── test_clinic.py           # Testes das rotas da clínica
+├── .github/
+│   └── workflows/
+│       └── ci.yml                 # Pipeline de CI (GitHub Actions)
 ├── .env                         # Variáveis de ambiente (não versionado)
 ├── .env.example                 # Exemplo das variáveis de ambiente
 ├── .gitignore                   # Arquivos ignorados pelo Git
+├── .dockerignore                # Arquivos excluídos do contexto de build Docker
+├── pyproject.toml               # Configuração do pytest e do ruff
 ├── alembic.ini                  # Configuração do Alembic
 ├── docker-compose.yml           # Orquestração dos containers
 ├── dockerfile                   # Build da imagem da API
@@ -504,10 +512,22 @@ O token contém:
 
 ```bash
 # Com virtualenv ativo
-PYTHONPATH=. pytest tests/ -v
+pytest -v
 
 # Com cobertura de código
-PYTHONPATH=. pytest tests/ -v --cov=app --cov-report=term-missing
+pytest -v --cov=app --cov-report=term-missing
+```
+
+> O `pythonpath` do pytest está configurado em `pyproject.toml`, então não é mais necessário exportar `PYTHONPATH=.` manualmente (o comando antigo continua funcionando).
+
+### Lint
+
+```bash
+# Instale o ruff (versão usada no CI)
+pip install ruff==0.16.9
+
+# Verifica o código
+ruff check .
 ```
 
 ### Estrutura dos Testes
@@ -533,6 +553,25 @@ PYTHONPATH=. pytest tests/ -v --cov=app --cov-report=term-missing
 | `test_login_invalid_credentials` | Login com senha errada retorna 401 | ✅ Passou |
 | `test_create_doctor_as_admin_success` | Admin cadastra médico com sucesso | ✅ Passou |
 | `test_create_doctor_unauthorized_token` | Requisição sem token retorna 401 | ✅ Passou |
+
+---
+
+## Integração Contínua
+
+O repositório possui um workflow de CI no GitHub Actions, definido em [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Ele roda a cada `push` na branch `main`, em cada Pull Request e pode ser disparado manualmente (`workflow_dispatch`).
+
+| Job | O que verifica |
+|-----|----------------|
+| **Lint (ruff)** | `ruff check .` com as regras configuradas em `pyproject.toml` |
+| **Tests** | `pytest` com cobertura, em matriz com Python 3.12, 3.13 e 3.14 |
+| **Alembic migrations** | `alembic upgrade head`, checagem de drift (`alembic check`), `downgrade base` e novo `upgrade head` |
+| **Docker build & smoke test** | Valida o `docker-compose.yml`, builda a imagem e sobe o container verificando a resposta da API |
+
+Observações:
+
+- As variáveis de ambiente usadas nos jobs (`SECRET_KEY`, `ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES`) são definidas apenas no workflow e valem só para a CI — nenhum `.env` é necessário.
+- O job de migrations usa `DATABASE_URL=sqlite:///./ci_migrations.db`, então não depende de um banco externo.
+- O build da imagem usa o `dockerfile` da raiz e o `.dockerignore` mantém `.env`, `venv/` e bancos locais fora do contexto de build.
 
 ---
 

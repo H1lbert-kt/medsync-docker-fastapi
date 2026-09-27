@@ -1,12 +1,12 @@
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-import jwt
 from jwt.exceptions import PyJWTError
 from sqlalchemy.orm import Session
 
+from app.core.security import ALGORITHM, SECRET_KEY
 from app.database import get_db
 from app.models.clinic import RoleEnum, UserModel
-from app.core.security import ALGORITHM, SECRET_KEY
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
@@ -25,7 +25,7 @@ def get_current_user(token: str = Depends(oauth2_scheme),
             raise credentials_exception
         user_id_int = int(user_id)
     except (PyJWTError, ValueError):
-        raise credentials_exception
+        raise credentials_exception from None
 
     user = db.query(UserModel).filter(UserModel.id == user_id_int).first()
     if user is None:

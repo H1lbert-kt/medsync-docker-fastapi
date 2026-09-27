@@ -1,7 +1,10 @@
-from pydantic import BaseModel, EmailStr, ConfigDict, field_validator
 from datetime import date, datetime, time
 from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
+
 from app.models.clinic import AppointmentStatus, RoleEnum
+
 
 class Token(BaseModel):
     access_token: str
@@ -42,7 +45,7 @@ class PatientResponse(BaseModel):
     user: UserResponse
     model_config = ConfigDict(from_attributes=True)
 
-class AppointmentCreate(BaseModel):  
+class AppointmentCreate(BaseModel):
     doctor_id: int
     patient_id: int
     date_consultation: date

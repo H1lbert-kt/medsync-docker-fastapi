@@ -1,5 +1,3 @@
-import pytest
-
 def test_login_success(client, admin_user):
     response = client.post(
         "auth/login",

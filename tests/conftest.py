@@ -4,10 +4,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.main import app
-from app.database import Base, get_db
-from app.models.clinic import UserModel, RoleEnum
 from app.core.security import get_password_hash
+from app.database import Base, get_db
+from app.main import app
+from app.models.clinic import RoleEnum, UserModel
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 

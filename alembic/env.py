@@ -2,11 +2,14 @@ import os
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
-from alembic import context
 
+from alembic import context
 from app.database import Base
-from app.models.clinic import (
-    UserModel, DoctorModel, PatientModel, AppointmentModel
+from app.models.clinic import (  # noqa: F401
+    AppointmentModel,
+    DoctorModel,
+    PatientModel,
+    UserModel,
 )
 
 config = context.config
